@@ -1,4 +1,4 @@
-# VoxCTL v0.3.2
+# VoxCTL v0.4.0
 
 **Your voice is the control surface.**
 
@@ -9,11 +9,14 @@ Play it at [abacusnin.github.io/VoxCTL](https://abacusnin.github.io/VoxCTL/). Us
 ## What it does
 
 - Tracks the pitch of one voice from 65 to 1400 Hz with the McLeod pitch method. An AudioWorklet collects the samples and the tracker runs on the main thread, so the synth never waits on the analysis.
-- Free mode follows your pitch continuously. Quantized mode pulls it onto a scale and holds each note until you move clearly toward the next, so a voice sitting between two notes does not flicker.
-- Built-in scales, plus custom microtonal scales entered in cents.
+- Free mode follows your pitch continuously. Quantized mode pulls it onto a scale and holds each note until you move clearly toward the next, so a voice sitting between two notes does not flicker. An optional free-mode hold, off by default, keeps small wobbles out.
+- Built-in scales, plus custom microtonal scales entered in cents, tuned to an A4 reference you set from 430 to 450 Hz.
+- A cents tuner shows how far your raw pitch sits from the nearest semitone, before any quantizing.
+- Attack, release and a loudness curve shape how the synth follows your voice.
+- A latency panel estimates the voice-to-sound delay from what the browser reports, and says which parts it could not get.
 - A mapping matrix routes other features of your voice (brightness, noisiness, vibrato, and rough formant estimates) to filter, detune, delay, reverb, and output level.
-- Records what you hear, then loops the take while you play over it.
-- Sends your pitch out over Web MIDI as notes and pitch bend, or lets a MIDI keyboard take over the pitch.
+- Records the synth, and loops a take against a tempo grid with a metronome click and a one-bar count-in while you play over it.
+- Sends your pitch out over Web MIDI as notes and pitch bend, or lets a MIDI keyboard take over the pitch. MIDI learn binds a controller's knobs to the sliders.
 - Saves presets in the browser, and imports and exports them as JSON.
 - Runs plugins: a trusted bundled plugin in the page, and control plugins in a sandboxed iframe.
 - Works offline after the first visit.
@@ -24,11 +27,13 @@ On speakers the synth reaches the microphone and the tracker hears it as your vo
 
 A feedback guard catches most of these loops. After 3 seconds of unbroken sound it mutes the synth for 300 ms. A singer keeps going through the gap, but a loop loses its source and the mic level collapses. When that happens the guard keeps the synth muted and shows a warning until the mic has been quiet for a second. It checks at most once every 20 seconds, so a long note held on speakers hears a short gap now and then.
 
-The guard cannot catch a recorded take looping through your speakers, because muting the synth does not stop the take. Loop on headphones.
+The guard cannot catch a recorded take or the metronome click coming through your speakers, because muting the synth does not stop them. Worse, while a loop plays on speakers the guard cannot catch the synth either, because the loop keeps the mic level up through its check. Loop on headphones.
+
+The guard's mute is its own fast path. A long Release setting slows the voice fading at a note end, but never the guard.
 
 ## Privacy
 
-Pitch tracking happens on your machine and no audio leaves it. Recording captures the synth's output, not your raw microphone.
+Pitch tracking happens on your machine and no audio leaves it. Recording captures the synth's output, not your raw microphone, and not the loop or the click.
 
 Spoken commands are optional and off by default. While they are on, the browser streams your microphone to its speech service: Chrome sends it to Google and Edge sends it to Microsoft.
 
@@ -46,7 +51,13 @@ Chrome and Edge get every feature. Other browsers run the core instrument, and t
 
 ## MIDI
 
-Click **Connect MIDI** and pick a port. As an input, a keyboard's notes and pitch bend override your voice. As an output, the theremin sends notes, pitch bend, and CC11 expression. It holds a note while your voice stays within 1.5 semitones of it and bends the rest of the way, so set the receiver's bend range to 2 semitones. [docs/MIDI.md](docs/MIDI.md) has the details.
+Click **Connect MIDI** and pick a port. As an input, a keyboard's notes and pitch bend override your voice. As an output, the theremin sends notes, pitch bend, and CC11 expression. It holds a note while your voice stays within 1.5 semitones of it and bends the rest of the way, so set the receiver's bend range to 2 semitones. Notes are relative to your A4 reference, so set the receiver's master tune to match.
+
+To bind a knob, pick a slider under **Learn target**, press **Learn CC** and move the knob. [docs/MIDI.md](docs/MIDI.md) has the details.
+
+## Looper
+
+Set BPM, beats per bar and bars, then **Start tempo** for a click. With **Record to the grid** checked, Record counts in one bar, records the set number of bars and stops on its own; the take is then ready to loop in time. Without it, Record works as before and runs until you press Stop. **Play loop** starts the last take on the next bar. A take is fitted to the loop by changing its speed, which changes its pitch too, and a fit that would need more than double or less than half speed is refused with a suggestion. **Loop offset** nudges a grid take against the click if it sounds early or late. [docs/PERFORMANCE.md](docs/PERFORMANCE.md) covers the timing.
 
 ## Microtonal scales
 
@@ -69,7 +80,9 @@ The sandbox keeps a plugin out of the page's DOM and storage, but it does not fu
 - One voice at a time. Chords and harmony are not tracked.
 - Pitches above 1400 Hz, which covers most whistling, read as silence.
 - Formant estimates are meant for musical control, not phonetics.
-- Loop playback runs outside the effects chain and outside the feedback guard's reach.
+- Loop playback and the click run outside the effects chain and outside the feedback guard's reach.
+- Takes record the synth only; there is no overdub yet.
+- Loop fitting changes speed and pitch together, with no time stretching.
 - Sandboxed plugins control parameters; they cannot process audio.
 
 ## Tests
@@ -84,9 +97,10 @@ The suite needs no packages and was run on Node 24. [docs/VALIDATION.md](docs/VA
 
 - [ARCHITECTURE](docs/ARCHITECTURE.md): how audio moves from the microphone to the synth
 - [SIGNAL_SPEC](docs/SIGNAL_SPEC.md): the voice features and their ranges
+- [PERFORMANCE](docs/PERFORMANCE.md): tuning, the tuner, dynamics, the latency estimate, looper timing and MIDI learn
 - [PLUGIN_SPEC](docs/PLUGIN_SPEC.md): manifests, capabilities, and the sandbox bridge
 - [PRESET_FORMAT](docs/PRESET_FORMAT.md): the preset JSON format
-- [MIDI](docs/MIDI.md): MIDI input and output
+- [MIDI](docs/MIDI.md): MIDI input and output, and MIDI learn
 - [SECURITY](docs/SECURITY.md): the privacy and plugin trust model
 - [CHANGELOG](CHANGELOG.md)
 

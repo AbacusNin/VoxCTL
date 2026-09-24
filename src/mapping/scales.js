@@ -19,8 +19,29 @@ export const MAX_CUSTOM_DEGREES = 128;
 // Plain decimal cents only, so '0x10' or '1e3' is not read as a pitch.
 const DECIMAL = /^[+-]?(\d+(\.\d*)?|\.\d+)$/;
 
-export function hzToMidi(hz) { return 69 + 12 * Math.log2(hz / 440); }
-export function midiToHz(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+// A4 reference tuning. Every MIDI number in the app is in reference space:
+// note 69 is A4 at the reference, so quantizing, custom cents scales and MIDI
+// out follow the tuning without knowing about it.
+export const A4_DEFAULT = 440;
+export const A4_MIN = 430;
+export const A4_MAX = 450;
+
+// Same parsing as the preset clamp. Number('') is 0, which would clamp to
+// 430, so blank and non-numeric input fall back to 440 instead.
+export function clampReference(hz) {
+  const value = typeof hz === 'string' && hz.trim() !== '' ? Number(hz) : hz;
+  if (typeof value !== 'number' || !Number.isFinite(value)) return A4_DEFAULT;
+  return Math.max(A4_MIN, Math.min(A4_MAX, value));
+}
+
+export function hzToMidi(hz, a4 = A4_DEFAULT) { return 69 + 12 * Math.log2(hz / a4); }
+export function midiToHz(midi, a4 = A4_DEFAULT) { return a4 * Math.pow(2, (midi - 69) / 12); }
+
+// Cents from the nearest equal-tempered semitone of the reference, -50..+50.
+export function centsOffset(hz, a4 = A4_DEFAULT) {
+  const m = hzToMidi(hz, a4);
+  return (m - Math.round(m)) * 100;
+}
 export function midiToNote(midi) {
   const rounded = Math.round(midi);
   return `${NOTE_NAMES[((rounded % 12) + 12) % 12]}${Math.floor(rounded / 12) - 1}`;

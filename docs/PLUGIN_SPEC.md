@@ -1,6 +1,6 @@
-# Plugin Specification, API v0.3 (app v0.3.2)
+# Plugin Specification, API v0.3 (app v0.4.0)
 
-The plugin API version stays 0.3. The v0.3.1 release tightened what the host accepts; those rules are below.
+The plugin API version stays 0.3. The v0.3.1 release tightened what the host accepts; those rules are below. v0.4.0 changes nothing a plugin sees: signals still carry `pitchHz` in raw Hz, whatever the A4 reference is.
 
 ## Manifest
 
@@ -110,3 +110,5 @@ The host renders plugin controls itself; plugin code receives only `setParameter
 - a finite `default` within `[min, max]`.
 
 Any other shape fails the load. `setParameter` values are clamped to the control's range, and names that are not in the manifest are ignored.
+
+Every plugin control can be bound to a MIDI CC through MIDI learn, as `plugin:<id>:<control id>`. A learned CC moves the host-rendered slider and reaches the plugin through the same `setParameter` call a hand drag makes. The binding is inert while the plugin is not loaded. See `MIDI.md`.

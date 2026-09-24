@@ -1,5 +1,39 @@
 # Changelog
 
+## v0.4.0
+
+"Feel": controls for how the instrument responds, a tempo looper and MIDI learn. The features were ported from a v0.4 prototype built on the unfixed v0.3 code, onto VoxCTL's own architecture. None of its files were copied.
+
+### Added
+
+- Reference A4 from 430 to 450 Hz. It sets the oscillator's base frequency, and every MIDI number in the app is relative to it, so quantizing, custom cents scales, the note readout, the tuner and MIDI out all follow it. Changing it mid-note does not reset the pitch tracker: the tracker shifts its recent pitches into the new reference, so a swept reference glides instead of jumping, and MIDI out bends instead of retriggering.
+- A cents tuner under the scope. It shows the raw detected pitch against the nearest semitone of the reference, before the median, the hysteresis and quantizing, and names the note it measures against.
+- Attack (1 to 500 ms), Release (5 to 2000 ms) and a Loudness curve (0.25 to 2.5) for the voice gain. The defaults reproduce v0.3.2's time constants. Attack or release is chosen against where the gain actually is, not the last target.
+- The voice gain now has two ways down. release() is the note end and follows the Release setting. mute() is a fixed 35 ms path for the feedback guard, calibration, a hidden tab and a stalled worklet. With the release as the guard's mute, a long release kept the synth sounding through the 300 ms probe: in simulation, a 250 ms speaker delay went uncaught from a 300 ms release up.
+- Free-mode hysteresis, 0 to 25 cents, default 0 (off). The hint says what it costs: it removes vibrato shallower than the setting, stairs slow slides, and can hold a note up to the setting off pitch. Quantized mode keeps its own hold and skips this one.
+- A latency estimate: mic track, half the pitch window, half the analysis cadence, audio context and output device, from values the browser reports. Unreported parts say so and mark the total with a +. It is labeled an estimate, not a measurement.
+- A tempo looper: BPM, beats per bar and bars, a metronome click, and Record to the grid, which counts in one bar (clicked even with the metronome off), records the set bars and stops on its own. Loops start on the next bar. A take is trimmed to its grid, or fitted by playback rate between 0.5x and 2x with the pitch change stated; anything outside that is refused with a suggested bar count instead of clamped. Take alignment uses the recorder's start call time plus a latency estimate and a Loop offset nudge. Loop and click levels have their own sliders.
+- Loop playback and the click join the output limiter beside the synth, so Output, mappings and plugin ducking do not touch them. The recorder now taps a twin limiter on the synth alone.
+- MIDI learn for every slider, including loaded plugins' sliders: pick a target, press Learn CC, move a control. CCs 0 to 119 on any channel; channel mode messages never bind. The arm times out after 15 s. A CC applies through the slider's own input event at most once every 16 ms. Bindings are validated on every read and saved in this browser.
+- Preset schema 2, with the Feel controls, optional tempo and optional MIDI learn bindings. Every number is clamped and snapped to its slider's step. Schema 1 files import with their v1 fields only, stored 0.3.x presets upgrade on read under the same key, and a newer schema is refused with its own message. Bindings travel in a preset only when Include MIDI learn bindings is checked.
+- docs/PERFORMANCE.md.
+
+### Changed
+
+- A MIDI CC never reaches the MIDI override logic. In v0.3.2, with override on and no key held, one CC muted the voice and made MIDI out send a note-off and a new note-on.
+- CC 120 and CC 123 (a panic button) release held keys, so MIDI override lets go.
+- Takes record the synth only. v0.3.2 recorded after the output limiter; the loop and click now share that limiter, so the recorder moved to its own. The looping checkbox on the review player is gone; loop the take with Play loop instead.
+- Calibration stops the tempo and any loop first, so the click cannot raise the noise floor. A hidden tab stops them too; a take already recording carries on, as before.
+- A falling voice level while voiced now eases over 35 ms instead of 18 at the default release.
+
+### Left out on purpose
+
+- The prototype's octave guard. It held a real sung octave leap, 220 to 440 Hz for 1.8 s, at 220 Hz the whole time. VoxCTL's McLeod detector has no octave errors on its test signals for a guard to fix.
+- The prototype's 14 cent free-mode hysteresis default. It turned a ±10 cent vibrato into one flat pitch. The option is here, off by default and capped at 25 cents.
+- The prototype's visual patchbay. v0.5 replaces the mapping model it draws.
+- Overdub. MediaRecorder cannot start sample-accurately and each pass would be re-encoded lossily. It waits for v0.5, when the loop and the recorder become routing destinations.
+- A getUserMedia latency constraint the prototype added. It changes device behavior and was untested.
+
 ## v0.3.2
 
 - Renamed the project from VoxFlux to VoxCTL, because another product already uses the VoxFlux name. Storage keys, the preset schema name, the sandbox runtime, and the service worker cache were renamed with it, so presets and calibration saved under VoxFlux do not carry over. The site moved to abacusnin.github.io/VoxCTL/.

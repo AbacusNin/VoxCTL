@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FeedbackGuard } from '../src/audio/feedback-guard.js';
+import { MUTE_TAU_S } from '../src/audio/audio-engine.js';
 
 const FRAME = 30;
 
@@ -48,4 +49,27 @@ test('the guard rearms once the mic goes quiet', () => {
   assert.equal(g.update(0, { voiced: false, rms: 0 }), 'feedback');
   assert.equal(g.update(1100, { voiced: false, rms: 0 }), 'play');
   assert.equal(g.update(1200, { voiced: true, rms: 0.05 }), 'play');
+});
+
+// The probe mute decays the synth with time constant tau; the mic hears that
+// decay delayMs later. With the release time as the mute (2 s release is a
+// tau of 2/3 s), the level barely moves inside the 300 ms probe.
+function probeTrips(tauS, delayMs) {
+  const g = new FeedbackGuard();
+  let probeStart = null;
+  for (let t = 0; t < 8000; t += FRAME) {
+    let rms = 0.1;
+    if (probeStart !== null && t > probeStart + delayMs) rms = 0.1 * Math.exp(-(t - delayMs - probeStart) / (tauS * 1000));
+    const a = g.update(t, { voiced: true, rms });
+    if (a === 'feedback') return true;
+    if (a === 'probe' && probeStart === null) probeStart = t;
+    if (a === 'play' && probeStart !== null) return false;
+  }
+  return false;
+}
+
+test('the fast mute lets the guard catch a Bluetooth-delay loop that a long release hides', () => {
+  assert.equal(probeTrips(MUTE_TAU_S, 250), true);
+  assert.equal(probeTrips(2 / 3, 250), false);
+  assert.equal(probeTrips(MUTE_TAU_S, 60), true);
 });

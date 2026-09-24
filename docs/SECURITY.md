@@ -1,12 +1,12 @@
-# Security Notes, v0.3.2
+# Security Notes, v0.4.0
 
 ## Core principles
 
 - Core instrument operation requires no backend or API key.
 - Microphone permission is requested only after the user starts the instrument.
 - Web MIDI permission is requested only after the user chooses Connect MIDI, without SysEx.
-- Room calibration and user presets are stored locally in browser storage.
-- Master-bus recording captures generated synth output, not the raw microphone track.
+- Room calibration, user presets and MIDI learn bindings are stored locally in browser storage.
+- Recording captures the generated synth, not the raw microphone track. Loop playback and the metronome click are not recorded either.
 - The continuous theremin path never sends audio anywhere.
 
 ## Speech commands and privacy
@@ -25,7 +25,7 @@ index.html carries a meta Content-Security-Policy:
 
 A meta CSP cannot set frame-ancestors, and GitHub Pages cannot send custom headers. The app therefore refuses to run when it is framed by another page, showing only a message, so a hostile site cannot overlay Start, Record or Connect MIDI.
 
-Every string that app.js writes into markup (preset names and ids, mapping fields, MIDI port names, plugin manifest fields) is escaped.
+Every string that app.js writes into markup (preset names and ids, mapping fields, MIDI port names, plugin manifest fields, MIDI learn target labels and binding chips, latency labels) is escaped. CC numbers pass through Number() before they reach markup, and plugin ids in selectors go through CSS.escape. The tuner needle moves through the CSSOM (`style.left`), which style-src 'self' allows; no style attribute is written through innerHTML.
 
 ## Plugin model
 
@@ -61,8 +61,18 @@ The sandbox limits hostile JavaScript but does not fully contain it:
 - Browser-engine vulnerabilities are outside the application threat model.
 - Isolated plugins cannot contribute AudioWorklet or DSP code.
 - Trusted plugins are trusted code, not sandboxed code.
-- Browser storage is shared with every page on the origin. On GitHub Pages that is every project site of one account, so stored presets and calibration are validated on every read rather than trusted.
+- Browser storage is shared with every page on the origin. On GitHub Pages that is every project site of one account, so stored presets, calibration and MIDI learn bindings are validated on every read rather than trusted. See Stored data.
 - Preset JSON is data and is validated, but treat files from unknown sources with care.
+
+## Stored data
+
+Three keys, each validated on every read:
+
+- `voxctl.presets.v0.3`: user presets. Ids must match `user:` plus 1 to 16 lowercase letters or digits, and each state is rebuilt by `sanitizeState` from allowlisted fields, with every number clamped to its slider and snapped to its step. See `PRESET_FORMAT.md`.
+- `voxctl.calibration.v0.2`: the room baseline. Values outside what calibration can produce are ignored.
+- `voxctl.midiLearn.v0.4`: MIDI learn bindings. Storage is read inside a try, because with site data blocked Chrome throws on the localStorage getter itself. Text over 4096 characters is dropped before JSON.parse. The result must be an array. Only its first 64 entries are read, and each is kept only with an integer CC from 0 to 119 and a param from the learnable list or `plugin:<id>:<control>` with the plugin host's id rules. One binding per CC and one per param survive, at most 32, each rebuilt as a new `{ cc, param }` object. A stored name such as `constructor` is dropped rather than looked up. Preset files go through the same check.
+
+Bindings in a preset are applied only when the user checks Include MIDI learn bindings, which is off by default, so a shared preset cannot silently replace them.
 
 ## Feedback safety
 
@@ -70,6 +80,8 @@ Use headphones. The app turns off browser noise suppression, automatic gain and 
 
 A feedback guard catches most loops. After 3 s of unbroken voice it mutes the synth for 300 ms and watches the lowest mic level across that probe. A singer keeps going through the gap; a speaker loop loses its source. If the level falls below 30% of the level before the probe, the guard keeps the synth and MIDI output muted and shows a warning until the mic has been quiet for 1 s. Probes are at least 20 s apart, and the guard resets when the tab is hidden or MIDI override is toggled. It is off while MIDI input drives pitch.
 
-The guard cannot catch loop playback of a recorded take, because muting the synth leaves the take playing. The UI says so next to the loop toggle.
+The guard's mute never follows the Release setting. It uses a fixed 35 ms time constant, so a long release cannot keep the synth sounding through the 300 ms probe and hide a loop.
 
-A limiter before the destination keeps the summed dry, delay and reverb paths from clipping at high settings, in the speakers and in recordings.
+The guard cannot catch loop playback of a recorded take or the metronome click, because muting the synth leaves them playing. While a loop plays on speakers it cannot catch the synth either: once playback made up 30% or more of the mic level, a simulated synth loop was never caught. The UI says so next to the loop controls: loop on headphones.
+
+A limiter before the destination keeps the summed dry, delay and reverb paths, the loop and the click from clipping at high settings. The recording has its own limiter with the same settings, on the synth alone.

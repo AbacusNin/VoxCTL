@@ -13,7 +13,9 @@
 //
 // Loop playback of a recorded take is a second speaker path this guard does
 // not catch: muting the synth leaves the take playing, so the mic level does
-// not collapse. The UI warns about it next to the loop toggle instead.
+// not collapse. For the same reason a loop on speakers also hides a synth
+// loop: once playback made up 30% or more of the mic level, a simulated synth
+// loop was never caught. The UI warns about both next to the loop controls.
 //
 // update() returns what the synth should do this frame:
 //   'play'     normal

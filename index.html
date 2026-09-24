@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#101114" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-GiL0TAmowy+dI+fz8xPjWVGo8+hrHX9vXxPe5fnm0TI=' 'sha256-VeSMBXXtW78yuA9WkgW0tteSJdtBZOIFfGIaKgySUmg='; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'" />
   <meta name="description" content="VoxCTL - Your voice is the control surface. A browser theremin you play by singing." />
-  <title>VoxCTL v0.3.2</title>
+  <title>VoxCTL v0.4.0</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon-192.png" />
   <link rel="stylesheet" href="./styles.css" />
@@ -17,7 +17,7 @@
       <div>
         <p class="eyebrow">YOUR VOICE IS THE CONTROL SURFACE</p>
         <h1>VoxCTL</h1>
-        <p class="version">v0.3.2 · GitHub Pages native · McLeod pitch engine</p>
+        <p class="version">v0.4.0 · GitHub Pages native · McLeod pitch engine</p>
       </div>
       <button id="startButton" class="primary" disabled>Start instrument</button>
     </header>
@@ -46,12 +46,14 @@
         <div class="readout"><span id="noteReadout">--</span><strong id="pitchReadout">0.0 Hz</strong><span id="confidenceReadout">waiting for mic</span></div>
       </div>
       <div class="meter-row"><span>VOICE</span><div class="meter"><div id="voiceMeter" class="meter-fill"></div></div><span id="rmsReadout">0%</span></div>
+      <div class="tuner-row"><span>TUNE</span><div class="tuner-track" aria-hidden="true"><div class="tuner-center"></div><div id="tunerNeedle" class="tuner-needle"></div></div><strong id="tunerReadout">-- ¢</strong></div>
     </section>
 
-    <section class="grid three feature-strip">
+    <section class="grid four feature-strip">
       <article class="panel compact"><span class="mini-label">ANALYSIS</span><strong id="analysisStatus">not started</strong></article>
       <article class="panel compact"><span class="mini-label">NOISE FLOOR</span><strong id="noiseFloorReadout">default</strong></article>
       <article class="panel compact"><span class="mini-label">VOICE GATE</span><strong id="noiseGateReadout">0.0080</strong></article>
+      <article class="panel compact"><span class="mini-label">LATENCY (EST.)</span><strong id="latencyTotal">--</strong></article>
     </section>
 
     <section class="grid two">
@@ -66,6 +68,9 @@
         </div>
         <label>Quantize strength <output id="quantizeValue">100%</output><input id="quantizeStrength" type="range" min="0" max="100" value="100" /></label>
         <label>Glide <output id="glideValue">45 ms</output><input id="glide" type="range" min="0" max="500" value="45" /></label>
+        <label>Reference A4 <output id="referenceA4Value">440.0 Hz</output><input id="referenceA4" type="range" min="430" max="450" step="0.1" value="440" /></label>
+        <label>Free-mode hysteresis <output id="freeHysteresisValue">0 ¢</output><input id="freeHysteresis" type="range" min="0" max="25" step="1" value="0" /></label>
+        <p class="muted tiny">The tuner under the scope shows the sung pitch against the nearest semitone of the reference, before quantizing. Hysteresis holds free-mode pitch until the voice moves further than the setting. It also removes vibrato shallower than the setting, turns slow slides into steps, and can leave a held note up to that far off. 0 is off. Quantized mode has its own hold.</p>
       </article>
 
       <article class="panel">
@@ -75,6 +80,10 @@
         <label>Delay <output id="delayValue">18%</output><input id="delayMix" type="range" min="0" max="70" value="18" /></label>
         <label>Reverb <output id="reverbValue">28%</output><input id="reverbMix" type="range" min="0" max="80" value="28" /></label>
         <label>Output <output id="outputValue">65%</output><input id="outputGain" type="range" min="0" max="100" value="65" /></label>
+        <label>Attack <output id="attackValue">54 ms</output><input id="attack" type="range" min="1" max="500" value="54" /></label>
+        <label>Release <output id="releaseValue">105 ms</output><input id="release" type="range" min="5" max="2000" value="105" /></label>
+        <label>Loudness curve <output id="loudnessCurveValue">0.72</output><input id="loudnessCurve" type="range" min="0.25" max="2.5" step="0.01" value="0.72" /></label>
+        <p class="muted tiny">Times are to about 95 percent. Release also slows the voice getting quieter, not only the note end. The feedback guard mutes on its own fast path, never at the release time. Below 1 the curve lifts quiet singing; above 1 it saves the full level for loud singing.</p>
       </article>
     </section>
 
@@ -97,6 +106,7 @@
         <label>Preset<select id="presetSelect"></select></label>
         <div class="button-row"><button id="loadPreset" class="secondary">Load</button><button id="deletePreset" class="secondary">Delete</button></div>
         <label>Save current setup<input id="presetName" type="text" maxlength="64" placeholder="My haunted patch" /></label>
+        <label class="toggle"><input id="presetIncludeMidi" type="checkbox" /> Include MIDI learn bindings (save and load)</label>
         <button id="savePreset" class="secondary">Save preset locally</button>
         <div class="button-row top-gap"><button id="exportPreset" class="secondary">Export JSON</button><button id="importPreset" class="secondary">Import JSON</button></div>
         <input id="presetFile" type="file" accept="application/json,.json" hidden />
@@ -120,17 +130,34 @@
         <label>Output<select id="midiOutput" disabled><option value="">None</option></select></label>
         <label class="toggle"><input id="midiInputOverride" type="checkbox" /> MIDI note + pitch bend override synth pitch</label>
         <label class="toggle"><input id="midiOutputToggle" type="checkbox" /> Send theremin pitch to MIDI output</label>
+        <div class="midi-learn">
+          <label>Learn target<select id="midiLearnTarget"></select></label>
+          <div class="button-row"><button id="midiLearnArm" class="secondary" type="button">Learn CC</button><button id="midiLearnClear" class="secondary" type="button">Clear all</button></div>
+          <div id="midiLearnList" class="midi-learn-list"></div>
+          <p class="muted tiny">Pick a slider, press Learn CC, then move a knob or fader. CCs 0 to 119 on any channel can bind; the slider jumps to the knob. Bindings are saved in this browser.</p>
+        </div>
         <p id="midiStatus" class="muted">Optional. MIDI access is requested only when you connect it.</p>
       </article>
 
       <article class="panel">
-        <p class="eyebrow">MASTER BUS</p><h2>Recorder / looper</h2>
+        <p class="eyebrow">SYNTH BUS</p><h2>Recorder / looper</h2>
         <div class="button-row"><button id="recordButton" class="secondary" disabled>Record</button><button id="stopRecord" class="secondary" disabled>Stop</button></div>
         <audio id="recordingPlayer" controls preload="metadata"></audio>
-        <label class="toggle"><input id="recordingLoop" type="checkbox" /> Loop playback while continuing to perform</label>
-        <p class="muted tiny">On speakers, loop playback feeds the mic. The feedback guard cannot catch that path, so loop on headphones.</p>
         <button id="downloadRecording" class="secondary" disabled>Download take</button>
-        <p id="recordingStatus" class="muted">Records the generated synth master bus, not raw microphone audio.</p>
+        <p class="muted tiny">Takes record the synth only. Loop playback, the click and the count-in are not recorded.</p>
+        <div class="loop-grid">
+          <label>BPM<input id="loopBpm" type="number" min="40" max="240" step="1" value="96" /></label>
+          <label>Beats per bar<input id="loopBeats" type="number" min="1" max="12" step="1" value="4" /></label>
+          <label>Bars<input id="loopBars" type="number" min="1" max="16" step="1" value="1" /></label>
+        </div>
+        <label class="toggle"><input id="metronomeToggle" type="checkbox" checked /> Metronome click</label>
+        <label class="toggle"><input id="syncRecord" type="checkbox" /> Record to the grid (one-bar count-in, stops after the set bars)</label>
+        <div class="button-row"><button id="transportButton" class="secondary" type="button">Start tempo</button><button id="playLoop" class="secondary" type="button" disabled>Play loop</button><button id="stopLoop" class="secondary" type="button" disabled>Stop loop</button></div>
+        <label>Loop level <output id="loopLevelValue">80%</output><input id="loopLevel" type="range" min="0" max="100" value="80" /></label>
+        <label>Click level <output id="clickLevelValue">50%</output><input id="clickLevel" type="range" min="0" max="100" value="50" /></label>
+        <label>Loop offset <output id="loopNudgeValue">0 ms</output><input id="loopNudge" type="number" min="-250" max="250" step="1" value="0" /></label>
+        <p class="muted tiny">On speakers, loop playback and the click feed the mic, and while a loop plays the feedback guard cannot catch the synth either. Loop on headphones. The loop is fitted to the bars by changing its speed, which changes its pitch too. Loop offset shifts a grid take earlier (positive) or later against the click, on top of the latency estimate.</p>
+        <p id="recordingStatus" class="muted" role="status">Records the synth output, not raw microphone audio.</p>
       </article>
     </section>
 
@@ -150,6 +177,13 @@
         <p id="pluginStatus" class="muted" role="status"></p>
         <p class="muted">Only bundled, reviewed modules run trusted in the page realm. Isolated control plugins run in a sandboxed iframe, talk to the host only over a private message port, and can only request the capabilities their manifest lists.</p>
       </article>
+    </section>
+
+    <section class="panel latency-panel">
+      <p class="eyebrow">PERFORMANCE TELEMETRY</p><h2>Latency estimate</h2>
+      <div id="latencyParts" class="feature-grid latency-grid"></div>
+      <p id="latencyUncounted" class="muted tiny"></p>
+      <p class="muted tiny">Estimated voice-to-sound delay from values the browser reports plus the pitch window. Not a measured round trip. A + means some values were not reported, so the real figure is higher.</p>
     </section>
 
     <section class="panel status-panel">

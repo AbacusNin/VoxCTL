@@ -3,9 +3,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
+import { LEARNABLE } from '../src/midi/midi-learn.js';
+import { A4_MIN, A4_MAX } from '../src/mapping/scales.js';
+import { DYNAMICS_LIMITS } from '../src/audio/audio-engine.js';
+import { LIMITS } from '../src/presets/preset-manager.js';
 
 const ROOT = new URL('../', import.meta.url);
-const VERSION = '0.3.2';
+const VERSION = '0.4.0';
 const read = path => readFile(new URL(path, ROOT), 'utf8');
 
 async function walk(dir = '') {
@@ -46,6 +50,43 @@ test('the release carries one version everywhere it is shown', async () => {
   for (const doc of (await readdir(new URL('docs/', ROOT))).filter(f => f.endsWith('.md'))) {
     const heading = (await read(`docs/${doc}`)).split('\n')[0];
     assert.ok(heading.includes(`v${VERSION}`), `docs/${doc} heading does not name v${VERSION}: ${heading}`);
+  }
+});
+
+// Attributes of every <input> in index.html, by id.
+async function inputs() {
+  const html = await read('index.html');
+  const out = {};
+  for (const [tag] of html.matchAll(/<input\b[^>]*>/g)) {
+    const attrs = Object.fromEntries([...tag.matchAll(/\s([a-z-]+)="([^"]*)"/g)].map(m => [m[1], m[2]]));
+    if (attrs.id) out[attrs.id] = attrs;
+  }
+  return out;
+}
+
+test('every MIDI learn target is a LEARNABLE name bound to a range input', async () => {
+  const app = await read('src/app.js');
+  const block = app.match(/const LEARN = \{([\s\S]*?)\n\};/)[1];
+  const learn = Object.fromEntries([...block.matchAll(/^\s*(\w+): \{ el: ui\.(\w+),/gm)].map(m => [m[1], m[2]]));
+  assert.deepEqual(Object.keys(learn).sort(), [...LEARNABLE].sort());
+  const uiIds = Object.fromEntries([...app.matchAll(/(\w+): \$\('([^']+)'\)/g)].map(m => [m[1], m[2]]));
+  const fields = await inputs();
+  for (const [param, uiName] of Object.entries(learn)) {
+    const id = uiIds[uiName];
+    assert.ok(id, `ui.${uiName} is not bound`);
+    assert.equal(fields[id]?.type, 'range', `${param} -> #${id} is not a range input`);
+  }
+});
+
+test('the Feel sliders, the engine limits and the preset limits agree', async () => {
+  const fields = await inputs();
+  const expect = {
+    referenceA4: [A4_MIN, A4_MAX], attack: DYNAMICS_LIMITS.attackMs, release: DYNAMICS_LIMITS.releaseMs,
+    loudnessCurve: DYNAMICS_LIMITS.curve, freeHysteresis: [0, 25]
+  };
+  for (const [id, [min, max]] of Object.entries(expect)) {
+    assert.deepEqual([Number(fields[id].min), Number(fields[id].max)], [min, max], id);
+    assert.deepEqual(LIMITS[id].slice(0, 2), [min, max], id);
   }
 });
 

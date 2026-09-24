@@ -1,10 +1,10 @@
-# Signal Specification, v0.3.2
+# Signal Specification, v0.4.0
 
 The feature object passed through the mapping and plugin layers may contain:
 
 | Signal | Meaning |
 |---|---|
-| `pitchHz` | Detected monophonic fundamental frequency, 65 to 1400 Hz; 0 when unvoiced |
+| `pitchHz` | Detected monophonic fundamental frequency in Hz, 65 to 1400; 0 when unvoiced. Raw Hz, not affected by the A4 reference |
 | `confidence` | Height of the chosen NSDF peak, 0 to 1; frames below 0.62 are unvoiced |
 | `rms` | Time-domain RMS amplitude |
 | `zcr` | Zero-crossing rate |
@@ -26,7 +26,11 @@ Plugins receive only `voiced` unless their manifest requests the voice.features.
 
 ## Primary control path
 
-`pitchHz` drives oscillator pitch and `rms` drives voice gain. These are not mapping-matrix routes; they define the instrument's baseline behavior. Pitch passes through a 3-frame median and, in Quantized mode, sticky quantizing before a single glide on the audio clock.
+`pitchHz` drives oscillator pitch and `rms` drives voice gain. These are not mapping-matrix routes; they define the instrument's baseline behavior.
+
+Pitch is converted to MIDI numbers relative to the A4 reference (430 to 450 Hz, default 440), so note 69 is A4 at the reference. It passes through a 3-frame median, then either sticky quantizing (Quantized mode) or the optional free-mode hysteresis (free mode, 0 to 25 cents, default 0), before a single glide on the audio clock. The cents tuner reads `pitchHz` before all of that: it shows the gated detector pitch against the nearest equal-tempered semitone of the reference, before the median, the hysteresis and quantizing.
+
+`rms` is normalized above the noise gate to 0 to 1, raised to the Loudness curve exponent (0.25 to 2.5, default 0.72), and scaled to the synth's voice gain. The gain rises with the Attack time and falls with the Release time, each to about 95 percent. It works as an envelope follower: Release applies to every falling level while the voice sounds, not only at the end of a note, so a long release also slows a decrescendo. The feedback guard, calibration, a hidden tab and a stalled worklet do not use the Release time; they mute with a fixed 35 ms time constant. MIDI output velocity and CC11 stay linear in the voice level.
 
 ## Mapping sources
 

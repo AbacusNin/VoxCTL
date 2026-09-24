@@ -81,3 +81,31 @@ test('an unplugged input is dropped along with its held notes', () => {
   assert.equal(m.getPerformanceState().active, false);
   assert.deepEqual(m.getSelection(), { input: '', output: '' });
 });
+
+test('All Notes Off and All Sound Off release held keys, and still arrive as CCs', () => {
+  for (const cc of [120, 123]) {
+    const events = [];
+    const m = new MidiManager({ onInput: e => events.push(e) });
+    m.handleMessage([0x90, 60, 100]);
+    m.handleMessage([0xb3, cc, 0]);
+    assert.equal(m.getPerformanceState().active, false);
+    assert.deepEqual(events.slice(1).map(e => e.type), ['note', 'cc']);
+  }
+  const events = [];
+  const m = new MidiManager({ onInput: e => events.push(e) });
+  m.handleMessage([0xb0, 123, 0]);
+  assert.deepEqual(events.map(e => e.type), ['cc']);
+});
+
+test('sweeping the A4 reference under a held voice sends one note-on, then only bends', async () => {
+  const { PitchTracker } = await import('../src/mapping/pitch-tracker.js');
+  const { m, sent } = withOutput();
+  const t = new PitchTracker();
+  for (let i = 0; i < 128; i++) {
+    const { midi } = t.update(440, { referenceA4: 430 + (20 * i) / 127 });
+    m.sendTheremin({ midi, level: 0.6 });
+  }
+  assert.equal(sent.filter(msg => kind(msg) === 0x90).length, 1);
+  assert.equal(sent.filter(msg => kind(msg) === 0x80).length, 0);
+  assert.ok(sent.filter(msg => kind(msg) === 0xe0).length > 100);
+});

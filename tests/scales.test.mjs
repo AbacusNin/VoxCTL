@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { quantizeMidi, quantizeMidiSticky, parseCustomScale, normalizeCents, scaleOffsets, MAX_CUSTOM_DEGREES } from '../src/mapping/scales.js';
+import { quantizeMidi, quantizeMidiSticky, parseCustomScale, normalizeCents, scaleOffsets, MAX_CUSTOM_DEGREES, hzToMidi, midiToHz, centsOffset, clampReference } from '../src/mapping/scales.js';
 
 const EDO24 = Array.from({ length: 24 }, (_, i) => i * 50);
 
@@ -65,4 +65,41 @@ test('custom scales are capped at the preset limit', () => {
   const long = Array.from({ length: 5000 }, (_, i) => (i * 0.2).toFixed(1)).join(' ');
   assert.equal(parseCustomScale(long).length, MAX_CUSTOM_DEGREES);
   assert.ok(scaleOffsets('custom', long).length <= MAX_CUSTOM_DEGREES);
+});
+
+const near = (a, b, eps = 1e-9) => Math.abs(a - b) < eps;
+
+test('conversions take the A4 reference, defaulting to 440', () => {
+  assert.equal(hzToMidi(432, 432), 69);
+  assert.equal(midiToHz(69, 450), 450);
+  assert.ok(near(hzToMidi(midiToHz(61.37, 437.5), 437.5), 61.37));
+  assert.equal(hzToMidi(440), 69);
+  assert.equal(midiToHz(69), 440);
+});
+
+test('cents offset is measured against the reference and stays within half a semitone', () => {
+  assert.ok(near(centsOffset(440, 432), 1200 * Math.log2(440 / 432)));
+  assert.ok(near(centsOffset(440, 432), 31.77, 0.01));
+  assert.ok(near(centsOffset(445, 440), 19.56, 0.01));
+  let seed = 7;
+  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 200; i++) {
+    const c = centsOffset(60 + rand() * 1400, 430 + rand() * 20);
+    assert.ok(c >= -50 && c <= 50, `${c}`);
+  }
+});
+
+test('the reference clamps to 430..450, and blank or junk input means 440', () => {
+  for (const bad of ['', '  ', 'abc', NaN, null, undefined, Infinity, '440abc', {}, []]) assert.equal(clampReference(bad), 440, String(bad));
+  assert.equal(clampReference(429), 430);
+  assert.equal(clampReference('451'), 450);
+  assert.equal(clampReference('432.5'), 432.5);
+  assert.equal(clampReference(441.3), 441.3);
+});
+
+test('quantizing works in reference space, including custom cents scales', () => {
+  const ref = 432;
+  assert.ok(near(midiToHz(quantizeMidi(hzToMidi(ref * 2 ** (0.3 / 12), ref), 'A', 'chromatic'), ref), 432));
+  const sung = hzToMidi(ref * 2 ** (45 / 1200), ref);
+  assert.ok(near(midiToHz(quantizeMidi(sung, 'A', 'custom', [0, 50, 100]), ref), ref * 2 ** (50 / 1200)));
 });

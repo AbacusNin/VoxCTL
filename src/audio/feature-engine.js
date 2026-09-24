@@ -89,6 +89,8 @@ export class FeatureEngine {
   analyzeVibrato(signal, now = performance.now()) {
     const none = { rate: 0, depth: 0 };
     if (signal.voiced && signal.pitchHz > 0 && signal.confidence > 0.55) {
+      // Any fixed base works here, and the A4 reference does not matter:
+      // only differences in cents are used.
       const cents = 1200 * Math.log2(signal.pitchHz / 440);
       const last = this.pitchHistory[this.pitchHistory.length - 1];
       // Wider than any per-frame vibrato swing: a new note, so start over.

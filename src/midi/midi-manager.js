@@ -83,6 +83,12 @@ export class MidiManager {
       this.pitchBend = Math.max(-1, Math.min(1, (raw - 8192) / 8192));
       this.emitState('bend');
     } else if (status === 0xb0) {
+      // All Sound Off and All Notes Off, from a controller's panic button,
+      // release held keys so MIDI override lets go.
+      if ((data1 === 120 || data1 === 123) && this.activeNotes.size) {
+        this.activeNotes.clear();
+        this.emitState('note');
+      }
       this.onInput({ type: 'cc', controller: data1, value: data2 / 127, state: this.getPerformanceState() });
     }
   }
