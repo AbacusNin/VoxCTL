@@ -1,4 +1,4 @@
-const CACHE = 'voxflux-v0.3.1';
+const CACHE = 'voxctl-v0.3.2';
 // Every runtime file. tests/app-shell.test.mjs fails if one is missing here,
 // because an uncached module breaks offline start.
 const ASSETS = [

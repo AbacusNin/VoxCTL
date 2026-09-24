@@ -1,8 +1,8 @@
-# Architecture, v0.3.1
+# Architecture, v0.3.2
 
 ## Overview
 
-VoxFlux turns features of a live voice into control signals and routes them to a synth, to MIDI, and to plugins. It ships as static files for GitHub Pages; nothing runs on a server.
+VoxCTL turns features of a live voice into control signals and routes them to a synth, to MIDI, and to plugins. It ships as static files for GitHub Pages; nothing runs on a server.
 
 ## Runtime flow
 

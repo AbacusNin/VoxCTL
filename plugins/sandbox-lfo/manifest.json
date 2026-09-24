@@ -1,7 +1,7 @@
 {
   "id": "sandbox-lfo",
   "name": "Sandbox LFO",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "type": "controller",
   "apiVersion": "0.3",
   "execution": "isolated",

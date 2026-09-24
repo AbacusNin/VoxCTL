@@ -1,4 +1,4 @@
-# Security Notes, v0.3.1
+# Security Notes, v0.3.2
 
 ## Core principles
 

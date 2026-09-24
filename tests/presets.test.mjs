@@ -12,8 +12,8 @@ beforeEach(() => {
 });
 afterEach(() => { delete globalThis.localStorage; });
 
-const KEY = 'voxflux.presets.v0.3';
-const file = (state, extra = {}) => JSON.stringify({ schema: 'voxflux-preset', schemaVersion: 1, name: 'P', state, ...extra });
+const KEY = 'voxctl.presets.v0.3';
+const file = (state, extra = {}) => JSON.stringify({ schema: 'voxctl-preset', schemaVersion: 1, name: 'P', state, ...extra });
 
 test('junk in storage yields no user presets instead of bogus entries', () => {
   for (const raw of ['"hello"', '[1,2,3]', 'null', '{bad json', '42']) {
@@ -63,7 +63,7 @@ test('import rejects oversized files and wrong shapes', () => {
 
 test('import cannot pollute prototypes or smuggle extra fields', () => {
   const pm = new PresetManager();
-  const id = pm.importPreset('{"schema":"voxflux-preset","schemaVersion":1,"name":"<img src=x onerror=alert(1)>","__proto__":{"polluted":1},"state":{"__proto__":{"polluted":1},"constructor":{"prototype":{"polluted":1}},"extra":"x","scale":"custom","root":"F#","customScale":[0,"50",150,1e9,null,-100]}}');
+  const id = pm.importPreset('{"schema":"voxctl-preset","schemaVersion":1,"name":"<img src=x onerror=alert(1)>","__proto__":{"polluted":1},"state":{"__proto__":{"polluted":1},"constructor":{"prototype":{"polluted":1}},"extra":"x","scale":"custom","root":"F#","customScale":[0,"50",150,1e9,null,-100]}}');
   assert.equal({}.polluted, undefined);
   const record = pm.getRecord(id);
   assert.equal(record.name, '<img src=x onerror=alert(1)> (import)');
@@ -89,7 +89,7 @@ test('saves in the same millisecond get distinct ids that pass the stored-id che
 test('export round-trips through import with the current app version', () => {
   const pm = new PresetManager();
   const json = pm.exportPreset('factory:space-choir');
-  assert.equal(JSON.parse(json).appVersion, '0.3.1');
+  assert.equal(JSON.parse(json).appVersion, '0.3.2');
   const id = pm.importPreset(json);
   assert.deepEqual(pm.get(id), pm.get('factory:space-choir'));
 });

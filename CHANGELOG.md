@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.2
+
+- Renamed the project from VoxFlux to VoxCTL, because another product already uses the VoxFlux name. Storage keys, the preset schema name, the sandbox runtime, and the service worker cache were renamed with it, so presets and calibration saved under VoxFlux do not carry over. The site moved to abacusnin.github.io/VoxCTL/.
+
 ## v0.3.1
 
 A fix release for v0.3.0. Each item says what was wrong and what changed.

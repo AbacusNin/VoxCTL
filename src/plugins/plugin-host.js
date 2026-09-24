@@ -58,7 +58,7 @@ export const SANDBOX_RUNTIME = `(() => {
     } catch (error) { send('error', { message: String(error?.message || error) }); }
   };
   const onInit = event => {
-    if (port || event.source !== parent || event.data?.channel !== 'voxflux-init' || !event.ports?.[0]) return;
+    if (port || event.source !== parent || event.data?.channel !== 'voxctl-init' || !event.ports?.[0]) return;
     port = event.ports[0];
     removeEventListener('message', onInit);
     port.onmessage = handle;
@@ -66,9 +66,9 @@ export const SANDBOX_RUNTIME = `(() => {
   };
   addEventListener('message', onInit);
   addEventListener('error', event => send('error', { message: String(event.message || 'sandbox error') }));
-  window.voxfluxSandbox = Object.freeze({
+  window.voxctlSandbox = Object.freeze({
     activate(factory) {
-      if (typeof factory !== 'function') throw new Error('Sandbox plugin must call voxfluxSandbox.activate(factory).');
+      if (typeof factory !== 'function') throw new Error('Sandbox plugin must call voxctlSandbox.activate(factory).');
       instance = factory(api) || {};
       announce();
     }
@@ -245,7 +245,7 @@ export class PluginHost {
       const channel = new MessageChannel();
       record.port = channel.port1;
       record.port.onmessage = event => this.handleIsolatedMessage(record, event.data);
-      iframe.contentWindow?.postMessage({ channel: 'voxflux-init' }, '*', [channel.port2]);
+      iframe.contentWindow?.postMessage({ channel: 'voxctl-init' }, '*', [channel.port2]);
     };
     iframe.addEventListener('load', record.onLoad);
     document.body.appendChild(iframe);

@@ -1,4 +1,4 @@
-# MIDI, v0.3.1
+# MIDI, v0.3.2
 
 Web MIDI is optional and activated only on explicit user action. Access is requested without SysEx.
 

@@ -1,4 +1,4 @@
-# Signal Specification, v0.3.1
+# Signal Specification, v0.3.2
 
 The feature object passed through the mapping and plugin layers may contain:
 

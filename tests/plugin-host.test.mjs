@@ -119,7 +119,7 @@ test('trusted execution is limited to the bundled allowlist; a missing execution
   files.set(`${ORIGIN}/t.json`, manifest({ execution: 'trusted' }));
   await assert.rejects(host.loadManifest('./t.json'), /Only bundled plugins may run trusted/);
   files.set(`${ORIGIN}/n.json`, manifest({ execution: undefined }));
-  files.set(`${ORIGIN}/p.js`, 'voxfluxSandbox.activate(() => ({}));');
+  files.set(`${ORIGIN}/p.js`, 'voxctlSandbox.activate(() => ({}));');
   const pending = host.loadManifest('./n.json');
   await until(() => frames[0]);
   assert.equal(frames.length, 1, 'no execution field went to the sandbox');
@@ -184,7 +184,7 @@ test('sandbox LFO boots over the port, drives only its permission, and ignores a
 test('signals carry only voiced unless voice.features.read is granted', async () => {
   const host = newHost();
   files.set(`${ORIGIN}/m.json`, manifest());
-  files.set(`${ORIGIN}/p.js`, 'voxfluxSandbox.activate(() => ({}));');
+  files.set(`${ORIGIN}/p.js`, 'voxctlSandbox.activate(() => ({}));');
   const pending = host.loadManifest('./m.json');
   await until(() => frames[0]);
   frames[0].fireLoad();

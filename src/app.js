@@ -14,7 +14,7 @@ import { MidiManager } from './midi/midi-manager.js';
 // one, so refuse to run inside another site's frame, where a page could
 // overlay Start, Record or Connect MIDI.
 if (window.top !== window.self) {
-  document.body.textContent = 'Open VoxFlux directly.';
+  document.body.textContent = 'Open VoxCTL directly.';
   throw new Error('framed');
 }
 
@@ -573,7 +573,7 @@ function exportSelectedPreset() {
   try {
     const json = presets.exportPreset(ui.presetSelect.value);
     const record = presets.getRecord(ui.presetSelect.value);
-    downloadBlob(new Blob([json], { type: 'application/json' }), `${slug(record?.name || 'voxflux')}.voxflux.json`);
+    downloadBlob(new Blob([json], { type: 'application/json' }), `${slug(record?.name || 'voxctl')}.voxctl.json`);
     ui.presetStatus.textContent = 'Preset exported.';
   } catch (error) { ui.presetStatus.textContent = error.message; }
 }
@@ -676,7 +676,7 @@ function fixUnknownDuration(player) {
 
 function downloadRecording() {
   if (!recordingBlob) return;
-  downloadBlob(recordingBlob, `voxflux-${new Date().toISOString().replace(/[:.]/g, '-')}.${recordingExtension(recordingBlob.type)}`);
+  downloadBlob(recordingBlob, `voxctl-${new Date().toISOString().replace(/[:.]/g, '-')}.${recordingExtension(recordingBlob.type)}`);
 }
 
 async function loadPlugin(url, button) {

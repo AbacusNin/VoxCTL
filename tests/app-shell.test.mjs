@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 
 const ROOT = new URL('../', import.meta.url);
-const VERSION = '0.3.1';
+const VERSION = '0.3.2';
 const read = path => readFile(new URL(path, ROOT), 'utf8');
 
 async function walk(dir = '') {
@@ -25,7 +25,7 @@ test('the service worker caches every runtime file and nothing that is missing',
   const runtime = files.filter(f => /^(src|plugins|icons)\//.test(f) || ['index.html', 'styles.css', 'manifest.webmanifest'].includes(f));
   for (const file of runtime) assert.ok(assets.includes(`./${file}`), `sw.js does not cache ./${file}`);
   for (const asset of assets) assert.ok(files.includes(asset.slice(2)), `sw.js lists ${asset}, which does not exist`);
-  assert.match(sw, new RegExp(`const CACHE = 'voxflux-v${VERSION.replace(/\./g, '\\.')}'`));
+  assert.match(sw, new RegExp(`const CACHE = 'voxctl-v${VERSION.replace(/\./g, '\\.')}'`));
 });
 
 test('every id app.js binds exists in index.html', async () => {
@@ -38,9 +38,9 @@ test('every id app.js binds exists in index.html', async () => {
 
 test('the release carries one version everywhere it is shown', async () => {
   const html = await read('index.html');
-  assert.match(html, new RegExp(`<title>VoxFlux v${VERSION}</title>`));
+  assert.match(html, new RegExp(`<title>VoxCTL v${VERSION}</title>`));
   assert.match(html, new RegExp(`class="version">v${VERSION} `));
-  assert.match(await read('README.md'), new RegExp(`^# VoxFlux v${VERSION}`));
+  assert.match(await read('README.md'), new RegExp(`^# VoxCTL v${VERSION}`));
   assert.match(await read('CHANGELOG.md'), new RegExp(`## v${VERSION}`));
   assert.match(await read('src/presets/preset-manager.js'), new RegExp(`appVersion: '${VERSION}'`));
   for (const doc of (await readdir(new URL('docs/', ROOT))).filter(f => f.endsWith('.md'))) {

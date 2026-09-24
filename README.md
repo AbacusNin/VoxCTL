@@ -1,10 +1,10 @@
-# VoxFlux v0.3.1
+# VoxCTL v0.3.2
 
 **Your voice is the control surface.**
 
-VoxFlux is a theremin you play by singing. It listens to your microphone and drives a synth with the pitch and loudness of your voice. Sing higher and the synth goes higher; sing louder and it gets louder. It runs entirely in the browser, with no server, no install, and no build step.
+VoxCTL is a theremin you play by singing. It listens to your microphone and drives a synth with the pitch and loudness of your voice. Sing higher and the synth goes higher; sing louder and it gets louder. It runs entirely in the browser, with no server, no install, and no build step.
 
-Play it at [abacusnin.github.io/VoxFlux](https://abacusnin.github.io/VoxFlux/). Use headphones.
+Play it at [abacusnin.github.io/VoxCTL](https://abacusnin.github.io/VoxCTL/). Use headphones.
 
 ## What it does
 
@@ -34,7 +34,7 @@ Spoken commands are optional and off by default. While they are on, the browser 
 
 ## Running it locally
 
-VoxFlux is a static site. Serve the folder over HTTP and open it in a browser:
+VoxCTL is a static site. Serve the folder over HTTP and open it in a browser:
 
 ```bash
 python -m http.server 8000
@@ -92,8 +92,8 @@ The suite needs no packages and was run on Node 24. [docs/VALIDATION.md](docs/VA
 
 ## License
 
-VoxFlux is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). You may use, study, change, and share it for any noncommercial purpose: personal projects, hobby use, study, research, and use by charities, schools, and public institutions.
+VoxCTL is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). You may use, study, change, and share it for any noncommercial purpose: personal projects, hobby use, study, research, and use by charities, schools, and public institutions.
 
-**Commercial use needs a separate license.** That includes building VoxFlux into a product or service, or offering it on a platform. For commercial licensing, email abacusnin@gmail.com.
+**Commercial use needs a separate license.** That includes building VoxCTL into a product or service, or offering it on a platform. For commercial licensing, email abacusnin@gmail.com.
 
 Copyright (C) 2026 Abacus.

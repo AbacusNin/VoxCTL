@@ -1,7 +1,7 @@
 // The storage key keeps its v0.2 suffix on purpose: renaming it would drop
 // every saved room baseline.
 export class CalibrationEngine {
-  constructor({ storageKey = 'voxflux.calibration.v0.2' } = {}) {
+  constructor({ storageKey = 'voxctl.calibration.v0.2' } = {}) {
     this.storageKey = storageKey;
     this.samples = [];
     this.active = false;

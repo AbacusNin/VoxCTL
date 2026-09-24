@@ -1,12 +1,12 @@
-# Preset Interchange Format, v0.3.1
+# Preset Interchange Format, v0.3.2
 
 Exported presets are JSON data, not executable plugins.
 
 ```json
 {
-  "schema": "voxflux-preset",
+  "schema": "voxctl-preset",
   "schemaVersion": 1,
-  "appVersion": "0.3.1",
+  "appVersion": "0.3.2",
   "name": "My patch",
   "state": {
     "pitchMode": "quantized",
@@ -32,7 +32,7 @@ Exported presets are JSON data, not executable plugins.
 
 ## Import
 
-A file over 256 KB is refused before it is read. The payload must be a JSON object with `schema` `"voxflux-preset"`, `schemaVersion` 1, a non-empty string `name` and an object `state`. The imported preset is saved under the first 55 characters of its name plus " (import)".
+A file over 256 KB is refused before it is read. The payload must be a JSON object with `schema` `"voxctl-preset"`, `schemaVersion` 1, a non-empty string `name` and an object `state`. The imported preset is saved under the first 55 characters of its name plus " (import)".
 
 ## Validation
 
@@ -59,4 +59,4 @@ Each mapping gets a `source` from the signal list in `SIGNAL_SPEC.md` (fallback 
 
 ## Storage
 
-User presets live in localStorage under `voxflux.presets.v0.3`. Stored ids must match `user:` plus 1 to 16 lowercase letters or digits, the name must be a string of at most 64 characters, and the state must be an object; other entries are ignored. Every page on the same origin shares this storage, which on GitHub Pages means every project site of one account, so stored entries are validated rather than trusted.
+User presets live in localStorage under `voxctl.presets.v0.3`. Stored ids must match `user:` plus 1 to 16 lowercase letters or digits, the name must be a string of at most 64 characters, and the state must be an object; other entries are ignored. Every page on the same origin shares this storage, which on GitHub Pages means every project site of one account, so stored entries are validated rather than trusted.

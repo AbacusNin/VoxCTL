@@ -52,7 +52,7 @@ export const MAX_PRESET_BYTES = 256 * 1024;
 
 export class PresetManager {
   // The key stays at v0.3: renaming it would orphan presets saved by 0.3.0.
-  constructor(storageKey = 'voxflux.presets.v0.3') { this.storageKey = storageKey; }
+  constructor(storageKey = 'voxctl.presets.v0.3') { this.storageKey = storageKey; }
 
   // Storage is shared with every page on the origin (all GitHub Pages project
   // sites of one account), so keep only entries save() could have written.
@@ -109,9 +109,9 @@ export class PresetManager {
     const record = this.getRecord(id);
     if (!record) throw new Error('Preset not found.');
     return JSON.stringify({
-      schema: 'voxflux-preset',
+      schema: 'voxctl-preset',
       schemaVersion: 1,
-      appVersion: '0.3.1',
+      appVersion: '0.3.2',
       name: record.name,
       state: record.state,
       exportedAt: new Date().toISOString()
@@ -123,7 +123,7 @@ export class PresetManager {
     if (text.length > MAX_PRESET_BYTES) throw new Error('Preset file is too large (256 KB maximum).');
     let payload;
     try { payload = JSON.parse(text); } catch { throw new Error('Preset file is not valid JSON.'); }
-    if (!isPlainObject(payload) || payload.schema !== 'voxflux-preset' || payload.schemaVersion !== 1) throw new Error('Unsupported preset schema.');
+    if (!isPlainObject(payload) || payload.schema !== 'voxctl-preset' || payload.schemaVersion !== 1) throw new Error('Unsupported preset schema.');
     if (typeof payload.name !== 'string' || !payload.name.trim() || !isPlainObject(payload.state)) throw new Error('Preset file is incomplete.');
     return this.save(`${payload.name.trim().slice(0, 55)} (import)`, payload.state);
   }

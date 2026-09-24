@@ -1,4 +1,4 @@
-# Plugin Specification, API v0.3 (app v0.3.1)
+# Plugin Specification, API v0.3 (app v0.3.2)
 
 The plugin API version stays 0.3. The v0.3.1 release tightened what the host accepts; those rules are below.
 
@@ -8,7 +8,7 @@ The plugin API version stays 0.3. The v0.3.1 release tightened what the host acc
 {
   "id": "example",
   "name": "Example",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "type": "controller",
   "apiVersion": "0.3",
   "execution": "isolated",
@@ -74,7 +74,7 @@ The `api` contains only the declared capability handles, for example `api.filter
 Isolated plugin entries are ordinary scripts, not ES modules. They call the sandbox bootstrap:
 
 ```js
-voxfluxSandbox.activate(api => ({
+voxctlSandbox.activate(api => ({
   onSignal(signal) {
     api.setCapability('synth.filter.offset', 500);
   },

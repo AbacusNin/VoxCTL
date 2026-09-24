@@ -1,4 +1,4 @@
-voxfluxSandbox.activate(api => {
+voxctlSandbox.activate(api => {
   let phase = 0;
   let depth = 1200;
   let rate = 0.08;
