@@ -1,0 +1,13 @@
+{
+  "name": "VoxFlux",
+  "short_name": "VoxFlux",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0c0d10",
+  "theme_color": "#101114",
+  "description": "VoxFlux - Your voice is the control surface. A browser theremin you play by singing.",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

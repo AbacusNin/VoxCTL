@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101114" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-gVjPsdtb2p4qAOchXuvNOwfGTJ3V1r9NV9qF1rwG570=' 'sha256-oJ0nDrWem/DL5t9CkbBczhqynKSw+j3t7Ck0H6w75fI='; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'" />
+  <meta name="description" content="VoxFlux - Your voice is the control surface. A browser theremin you play by singing." />
+  <title>VoxFlux v0.3.1</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">YOUR VOICE IS THE CONTROL SURFACE</p>
+        <h1>VoxFlux</h1>
+        <p class="version">v0.3.1 · GitHub Pages native · McLeod pitch engine</p>
+      </div>
+      <button id="startButton" class="primary" disabled>Start instrument</button>
+    </header>
+
+    <section class="panel system-check" aria-labelledby="systemCheckTitle">
+      <div class="system-check-head">
+        <div><p class="eyebrow">PRE-FLIGHT</p><h2 id="systemCheckTitle">System check</h2></div>
+        <strong id="systemVerdict" class="system-verdict">checking…</strong>
+      </div>
+      <div class="capability-grid">
+        <div class="capability-row" data-capability="secure"><span class="capability-icon">…</span><strong>Secure context</strong><span class="capability-status">checking</span></div>
+        <div class="capability-row" data-capability="audio"><span class="capability-icon">…</span><strong>Web Audio</strong><span class="capability-status">checking</span></div>
+        <div class="capability-row" data-capability="mic"><span class="capability-icon">…</span><strong>Microphone API</strong><span class="capability-status">checking</span></div>
+        <div class="capability-row optional" data-capability="worklet"><span class="capability-icon">…</span><strong>AudioWorklet</strong><span class="capability-status">checking</span></div>
+        <div class="capability-row optional" data-capability="recording"><span class="capability-icon">…</span><strong>Recording</strong><span class="capability-status">checking</span></div>
+        <div class="capability-row optional" data-capability="sw"><span class="capability-icon">…</span><strong>Service worker</strong><span class="capability-status">checking</span></div>
+        <div class="capability-row optional" data-capability="speech"><span class="capability-icon">…</span><strong>Speech commands</strong><span class="capability-status">checking</span></div>
+        <div class="capability-row optional" data-capability="midi"><span class="capability-icon">…</span><strong>Web MIDI</strong><span class="capability-status">checking</span></div>
+      </div>
+      <p id="systemCheckNote" class="muted system-check-note">Core audio must pass. MIDI, recording, speech, and offline features are optional.</p>
+    </section>
+
+    <section class="hero panel">
+      <div class="visualizer-wrap">
+        <canvas id="scope" width="1200" height="360" aria-label="Live audio waveform"></canvas>
+        <div class="readout"><span id="noteReadout">--</span><strong id="pitchReadout">0.0 Hz</strong><span id="confidenceReadout">waiting for mic</span></div>
+      </div>
+      <div class="meter-row"><span>VOICE</span><div class="meter"><div id="voiceMeter" class="meter-fill"></div></div><span id="rmsReadout">0%</span></div>
+    </section>
+
+    <section class="grid three feature-strip">
+      <article class="panel compact"><span class="mini-label">ANALYSIS</span><strong id="analysisStatus">not started</strong></article>
+      <article class="panel compact"><span class="mini-label">NOISE FLOOR</span><strong id="noiseFloorReadout">default</strong></article>
+      <article class="panel compact"><span class="mini-label">VOICE GATE</span><strong id="noiseGateReadout">0.0080</strong></article>
+    </section>
+
+    <section class="grid two">
+      <article class="panel">
+        <h2>Performance</h2>
+        <label>Pitch mode<select id="pitchMode"><option value="free">Free theremin</option><option value="quantized">Quantized</option></select></label>
+        <label>Scale<select id="scaleSelect"><option value="chromatic">Chromatic</option><option value="major">Major</option><option value="minor" selected>Minor</option><option value="pentatonic">Pentatonic</option><option value="blues">Blues</option><option value="dorian">Dorian</option><option value="phrygian">Phrygian</option><option value="wholeTone">Whole tone</option><option value="custom">Custom / microtonal</option></select></label>
+        <label>Root note<select id="rootSelect"><option>C</option><option>C#</option><option selected>D</option><option>D#</option><option>E</option><option>F</option><option>F#</option><option>G</option><option>G#</option><option>A</option><option>A#</option><option>B</option></select></label>
+        <div id="customScaleWrap" class="custom-scale" hidden>
+          <label>Scale degrees in cents<textarea id="customScaleCents" rows="3" maxlength="4000" spellcheck="false">0, 200, 300, 500, 700, 800, 1000</textarea></label>
+          <p id="customScaleStatus" class="muted tiny">Cents repeat every octave. Example quarter-tone scale: 0, 50, 100 … 1150. Up to 128 degrees.</p>
+        </div>
+        <label>Quantize strength <output id="quantizeValue">100%</output><input id="quantizeStrength" type="range" min="0" max="100" value="100" /></label>
+        <label>Glide <output id="glideValue">45 ms</output><input id="glide" type="range" min="0" max="500" value="45" /></label>
+      </article>
+
+      <article class="panel">
+        <h2>Synth</h2>
+        <label>Oscillator<select id="waveform"><option>sine</option><option>triangle</option><option>sawtooth</option><option>square</option></select></label>
+        <label>Filter cutoff <output id="filterValue">4200 Hz</output><input id="filterCutoff" type="range" min="150" max="12000" value="4200" /></label>
+        <label>Delay <output id="delayValue">18%</output><input id="delayMix" type="range" min="0" max="70" value="18" /></label>
+        <label>Reverb <output id="reverbValue">28%</output><input id="reverbMix" type="range" min="0" max="80" value="28" /></label>
+        <label>Output <output id="outputValue">65%</output><input id="outputGain" type="range" min="0" max="100" value="65" /></label>
+      </article>
+    </section>
+
+    <section class="grid two">
+      <article class="panel">
+        <div class="panel-head"><div><p class="eyebrow">ROOM MODEL</p><h2>Calibration</h2></div><button id="calibrationButton" class="secondary fit" disabled>Calibrate room</button></div>
+        <p id="calibrationStatus" class="muted">Start the instrument, then calibrate while remaining quiet for about two seconds. The baseline is stored only in this browser.</p>
+        <div class="feature-grid">
+          <div><span>Brightness</span><strong id="brightnessReadout">0%</strong></div>
+          <div><span>Noisiness</span><strong id="noisinessReadout">0%</strong></div>
+          <div><span>Centroid</span><strong id="centroidReadout">--</strong></div>
+          <div><span>F1 / F2*</span><strong id="formantReadout">-- / -- Hz</strong></div>
+          <div><span>Vibrato</span><strong id="vibratoReadout">--</strong></div>
+        </div>
+        <p class="muted tiny">*Formants are experimental spectral-envelope estimates, intended for musical control rather than phonetics research.</p>
+      </article>
+
+      <article class="panel">
+        <p class="eyebrow">PORTABLE STATE</p><h2>Presets</h2>
+        <label>Preset<select id="presetSelect"></select></label>
+        <div class="button-row"><button id="loadPreset" class="secondary">Load</button><button id="deletePreset" class="secondary">Delete</button></div>
+        <label>Save current setup<input id="presetName" type="text" maxlength="64" placeholder="My haunted patch" /></label>
+        <button id="savePreset" class="secondary">Save preset locally</button>
+        <div class="button-row top-gap"><button id="exportPreset" class="secondary">Export JSON</button><button id="importPreset" class="secondary">Import JSON</button></div>
+        <input id="presetFile" type="file" accept="application/json,.json" hidden />
+        <p id="presetStatus" class="muted">Factory presets are marked ◆. User presets are saved in this browser, and any preset can be exported or imported as JSON.</p>
+      </article>
+    </section>
+
+    <section class="panel mappings-panel">
+      <div class="panel-head">
+        <div><p class="eyebrow">MODULATION ROUTING</p><h2>Mapping matrix</h2></div>
+        <div class="button-row"><button id="addMapping" class="secondary fit">Add mapping</button><button id="resetMappings" class="secondary fit">Clear</button></div>
+      </div>
+      <p class="muted">Voice pitch → oscillator pitch and voice loudness → synth gain remain the primary path. These rows add modulation on top.</p>
+      <div id="mappingRows" class="mapping-rows"></div>
+    </section>
+
+    <section class="grid two">
+      <article class="panel">
+        <div class="panel-head"><div><p class="eyebrow">INTEROPERABILITY</p><h2>MIDI</h2></div><button id="midiConnect" class="secondary fit">Connect MIDI</button></div>
+        <label>Input<select id="midiInput" disabled><option value="">None</option></select></label>
+        <label>Output<select id="midiOutput" disabled><option value="">None</option></select></label>
+        <label class="toggle"><input id="midiInputOverride" type="checkbox" /> MIDI note + pitch bend override synth pitch</label>
+        <label class="toggle"><input id="midiOutputToggle" type="checkbox" /> Send theremin pitch to MIDI output</label>
+        <p id="midiStatus" class="muted">Optional. MIDI access is requested only when you connect it.</p>
+      </article>
+
+      <article class="panel">
+        <p class="eyebrow">MASTER BUS</p><h2>Recorder / looper</h2>
+        <div class="button-row"><button id="recordButton" class="secondary" disabled>Record</button><button id="stopRecord" class="secondary" disabled>Stop</button></div>
+        <audio id="recordingPlayer" controls preload="metadata"></audio>
+        <label class="toggle"><input id="recordingLoop" type="checkbox" /> Loop playback while continuing to perform</label>
+        <p class="muted tiny">On speakers, loop playback feeds the mic. The feedback guard cannot catch that path, so loop on headphones.</p>
+        <button id="downloadRecording" class="secondary" disabled>Download take</button>
+        <p id="recordingStatus" class="muted">Records the generated synth master bus, not raw microphone audio.</p>
+      </article>
+    </section>
+
+    <section class="grid two">
+      <article class="panel">
+        <h2>Commands</h2>
+        <label class="toggle"><input id="speechToggle" type="checkbox" /> Enable spoken commands</label>
+        <p id="speechStatus" class="muted">Optional. Continuous theremin control does not depend on speech recognition.</p>
+        <p class="muted tiny">Privacy: while spoken commands are on, the browser streams your microphone to its speech service. Chrome sends it to Google's servers and Edge to Microsoft's. The theremin audio path itself never leaves this device.</p>
+        <div class="command-examples"><code>"wave saw"</code><code>"free mode"</code><code>"quantize"</code><code>"more reverb"</code><code>"calibrate"</code></div>
+      </article>
+
+      <article class="panel">
+        <p class="eyebrow">API v0.3</p><h2>Plugins</h2>
+        <div id="pluginList"></div>
+        <div class="button-row plugin-loaders"><button id="loadGhostPlugin" class="secondary">Load Ghost Radio</button><button id="loadSandboxPlugin" class="secondary">Load Sandbox LFO</button></div>
+        <p id="pluginStatus" class="muted" role="status"></p>
+        <p class="muted">Only bundled, reviewed modules run trusted in the page realm. Isolated control plugins run in a sandboxed iframe, talk to the host only over a private message port, and can only request the capabilities their manifest lists.</p>
+      </article>
+    </section>
+
+    <section class="panel status-panel">
+      <div><span class="status-dot" id="micDot"></span><strong>Microphone</strong><span id="micStatus">not started</span></div>
+      <div><span class="status-dot" id="audioDot"></span><strong>Audio</strong><span id="audioStatus">suspended</span></div>
+      <div><span class="status-dot warning"></span><strong>Tip</strong><span>Use headphones. A feedback guard mutes the synth if it hears itself, but headphones prevent the loop.</span></div>
+    </section>
+  </main>
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+# The page CSP pins the sandbox runtime and isolated plugins by sha256 of
+# their exact bytes, so a CRLF checkout would break them. Keep LF everywhere.
+* text=auto eol=lf
+*.png binary

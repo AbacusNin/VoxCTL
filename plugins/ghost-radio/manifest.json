@@ -1,0 +1,15 @@
+{
+  "id": "ghost-radio",
+  "name": "Ghost Radio",
+  "version": "0.3.1",
+  "type": "effect/controller",
+  "apiVersion": "0.3",
+  "execution": "trusted",
+  "entry": "./plugin.js",
+  "description": "Voice-reactive filter drift. Bundled example running as a trusted same-realm module.",
+  "permissions": ["synth.filter.offset", "voice.features.read"],
+  "ui": [
+    {"id":"depth","label":"Drift depth","type":"range","min":0,"max":2200,"step":25,"default":900},
+    {"id":"rate","label":"Drift rate","type":"range","min":0.005,"max":0.12,"step":0.005,"default":0.025}
+  ]
+}
